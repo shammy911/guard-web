@@ -1,9 +1,9 @@
-import NextAuth from "next-auth";
+import { pool } from "@/lib/db";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { pool } from "@/lib/db";
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
       name: "Credentials",
@@ -30,16 +30,30 @@ export const authOptions = {
         if (!valid) return null;
 
         return {
-          id: user.id,
+          id: String(user.id),
           email: user.email,
         };
       },
     }),
   ],
 
-  session: { strategy: "jwt" as const },
+  session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = String(user.id);
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
   },
 };
 
