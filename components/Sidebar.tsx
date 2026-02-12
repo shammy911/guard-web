@@ -46,7 +46,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col border-r border-gray-800 bg-gray-950">
       <div className="flex h-16 items-center px-6 border-b border-gray-800">
-        <Link href="/app/dashboard" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <Shield className="h-6 w-6 text-emerald-500" />
           <span className="text-lg font-bold text-white">Guard</span>
         </Link>
