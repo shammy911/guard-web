@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
     "pg": "^8.18.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "@emotion/react": "^11.13.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "autoprefixer": "latest"
   }
 }
