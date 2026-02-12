@@ -1,7 +1,7 @@
-import React from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
-export default function Page() {
+
+export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <main className="py-24">

@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { Copy, Check } from "lucide-react";
-export default function Page() {
+
+export default function DocsPage() {
   const [activeTab, setActiveTab] = useState<"quickstart" | "api" | "examples">(
     "quickstart",
   );

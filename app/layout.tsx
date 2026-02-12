@@ -33,9 +33,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-gray-950 text-white`}
       >
-        <Navbar />
         <Providers>{children}</Providers>
-        <Footer />
       </body>
     </html>
   );
