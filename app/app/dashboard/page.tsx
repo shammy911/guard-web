@@ -77,7 +77,7 @@ export default function DashboardPage() {
             <BarChart3 className="h-5 w-5 text-gray-500" />
           </div>
           <p className="mt-2 text-3xl font-bold text-white">
-            {data.usage?.today ?? 0}
+            {(data.usage?.today?.allowed ?? 0) + (data.usage?.today?.blocked ?? 0)}
           </p>
           <div className="mt-2 flex items-center text-sm text-emerald-400">
             <ArrowUpRight className="mr-1 h-4 w-4" />
