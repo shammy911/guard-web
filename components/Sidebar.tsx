@@ -80,7 +80,12 @@ export function Sidebar() {
       <div className="border-t border-gray-800 p-4">
         <div className="flex items-center gap-3 mb-4 px-2">
           <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-xs">
-            {session.data?.user?.name?.charAt(0).toUpperCase() || "U"}
+            {session.data?.user?.name
+              ?.split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p) => p[0]?.toUpperCase())
+              .join("") || "U"}
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-white">
@@ -91,14 +96,13 @@ export function Sidebar() {
             </p>
           </div>
         </div>
-        <Link
+        <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          href="/login"
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-900 hover:text-white transition-colors"
         >
           <LogOut className="h-5 w-5" />
           Sign out
-        </Link>
+        </button>
       </div>
     </div>
   );

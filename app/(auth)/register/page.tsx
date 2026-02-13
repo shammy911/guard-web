@@ -32,7 +32,8 @@ export default function Page() {
     });
     setIsLoading(false);
     if (!res.ok) {
-      setError("Failed to register");
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to register");
       return;
     }
     window.location.href = "/login";
