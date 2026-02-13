@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Shield } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,6 +10,7 @@ export default function Page() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
+  const [name, setName] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +28,7 @@ export default function Page() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ name, email, password }),
     });
     setIsLoading(false);
     if (!res.ok) {
@@ -74,6 +74,8 @@ export default function Page() {
                   type="text"
                   required
                   className="block w-full appearance-none rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white placeholder-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
             </div>

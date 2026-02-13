@@ -80,10 +80,12 @@ export function Sidebar() {
       <div className="border-t border-gray-800 p-4">
         <div className="flex items-center gap-3 mb-4 px-2">
           <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-xs">
-            JD
+            {session.data?.user?.name?.charAt(0).toUpperCase() || "U"}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-white">John Doe</p>
+            <p className="truncate text-sm font-medium text-white">
+              {session.data?.user?.name || "User"}
+            </p>
             <p className="truncate text-xs text-gray-500">
               {session.data?.user?.email || "No email available"}
             </p>
