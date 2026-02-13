@@ -6,27 +6,36 @@ import { Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string>("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
-    await fetch("/api/register", {
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
     });
+    setIsLoading(false);
+    if (!res.ok) {
+      setError("Failed to register");
+      return;
+    }
+    window.location.href = "/login";
   }
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -128,6 +137,8 @@ export default function Page() {
                 />
               </div>
             </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             <div>
               <button

@@ -11,6 +11,8 @@ import {
   LogOut,
   Shield,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -42,6 +44,8 @@ export function Sidebar() {
       icon: Settings,
     },
   ];
+
+  const session = useSession();
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-gray-800 bg-gray-950">
@@ -80,10 +84,13 @@ export function Sidebar() {
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-white">John Doe</p>
-            <p className="truncate text-xs text-gray-500">john@example.com</p>
+            <p className="truncate text-xs text-gray-500">
+              {session.data?.user?.email || "No email available"}
+            </p>
           </div>
         </div>
         <Link
+          onClick={() => signOut({ callbackUrl: "/login" })}
           href="/login"
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-900 hover:text-white transition-colors"
         >

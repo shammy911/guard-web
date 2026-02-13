@@ -9,16 +9,25 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await signIn("credentials", {
+    setError("");
+    const res = await signIn("credentials", {
       email,
       password,
       callbackUrl: "/app/dashboard",
     });
     setIsLoading(false);
+
+    if (!res?.ok) {
+      setError("Invalid email or password");
+      return;
+    }
+
+    window.location.href = "/app/dashboard";
   };
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -111,6 +120,8 @@ export default function LoginPage() {
                 </a>
               </div>
             </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             <div>
               <button
