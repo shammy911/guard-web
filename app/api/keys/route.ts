@@ -2,20 +2,52 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 
-export async function POST() {
-  const session = await getServerSession(authOptions);
+function baseUrl() {
+  const base = process.env.GUARD_API_URL;
+  if (!base) throw new Error("GUARD_API_URL_MISSING");
+  return base.replace(/\/+$/, "");
+}
 
+export async function GET() {
+  const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
 
   try {
-    const res = await fetch(`${process.env.GUARD_API_URL}/keys`, {
+    const res = await fetch(
+      `${baseUrl()}/keys?userId=${encodeURIComponent(session.user.id)}`,
+    );
+    const text = await res.text();
+
+    return new NextResponse(text, {
+      status: res.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+
+  try {
+    const { name } = await req.json().catch(() => ({ name: "" }));
+
+    const res = await fetch(`${baseUrl()}/keys`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ userId: session.user.id }),
+      body: JSON.stringify({ userId: session.user.id, name }),
     });
 
     if (!res.ok) {
@@ -25,8 +57,11 @@ export async function POST() {
       );
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
+    const text = await res.text();
+    return new NextResponse(text, {
+      status: res.status,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },
