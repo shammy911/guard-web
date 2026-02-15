@@ -146,19 +146,19 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3">
           {/* Plan badge + details */}
-          <div className="inline-flex flex-col items-start">
-            <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-400 border border-emerald-500/20">
-              {planBadge}
+          <div className="inline-flex flex-col items-start ">
+            <span className="inline-flex justify-center items-center rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-400 border border-emerald-500/20">
+              {planBadge} |
+              <div className="ml-1 mt-1 text-xs text-gray-500 inline-flex items-center relative">
+                {rpm !== null && monthly !== null ? (
+                  <>
+                    {rpm} RPM • {monthly.toLocaleString()} / month
+                  </>
+                ) : (
+                  <>RPM • Monthly</>
+                )}
+              </div>
             </span>
-            <div className="mt-1 text-xs text-gray-500">
-              {rpm !== null && monthly !== null ? (
-                <>
-                  {rpm} RPM • {monthly.toLocaleString()} / month
-                </>
-              ) : (
-                <>RPM • Monthly</>
-              )}
-            </div>
           </div>
 
           <Link
