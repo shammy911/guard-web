@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield, Zap, Code, CheckCircle, ArrowRight } from "lucide-react";
+import { Shield, Zap, Code, ArrowRight } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -160,14 +160,12 @@ export default function LandingPage() {
                     <span className="text-blue-400">decision</span> ={" "}
                     <span className="text-purple-400">await</span> guard.
                     <span className="text-yellow-300">check</span>({"{"}
-                    <span className="text-emerald-400">apiKey</span>:{" "}
-                    <span className="text-orange-300">"grd_live_..."</span>,
-                    <span className="text-emerald-400">ip</span>:{" "}
-                    <span className="text-orange-300">"192.168.1.1"</span>,
                     <span className="text-emerald-400">path</span>:{" "}
-                    <span className="text-orange-300">"/api/v1/users"</span>
+                    <span className="text-orange-300">"/api/v1/users"</span>,
+                    <span className="text-emerald-400"> method</span>:{" "}
+                    <span className="text-orange-300">"GET"</span>
                     {"}"});
-                    <span className="text-purple-400">if</span>{" "}
+                    <span className="text-purple-400"> if</span>{" "}
                     (!decision.allowed) {"{"}
                     <span className="text-purple-400">return</span> res.
                     <span className="text-yellow-300">status</span>(429).
