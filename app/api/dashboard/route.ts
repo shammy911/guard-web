@@ -2,6 +2,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 
+function baseUrl() {
+  const base = process.env.GUARD_API_URL;
+  if (!base) throw new Error("GUARD_API_URL_MISSING");
+  return base.replace(/\/+$/, "");
+}
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -13,7 +19,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "API_KEY_REQUIRED" }, { status: 400 });
   }
 
-  const res = await fetch(`${process.env.GUARD_API_URL}/dashboard`, {
+  const res = await fetch(`${baseUrl()}/dashboard`, {
     headers: { "x-api-key": apiKey },
   });
 

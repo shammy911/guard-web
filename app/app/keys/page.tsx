@@ -32,7 +32,14 @@ function formatDate(ms: number | null) {
   return new Date(ms).toLocaleDateString();
 }
 
-export default function Page() {
+// Helper to mask a full token (used when selecting from reveal)
+function maskToken(token: string) {
+  const t = token.trim();
+  if (!t) return "";
+  return `${t.slice(0, 8)}…${t.slice(-4)}`;
+}
+
+export default function KeysPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [keys, setKeys] = useState<KeyRow[]>([]);
@@ -56,13 +63,31 @@ export default function Page() {
   const [selectMasked, setSelectMasked] = useState<string>("");
   const [selectToken, setSelectToken] = useState<string>("");
 
+  const [lastCreatedName, setLastCreatedName] = useState("");
+  const [selectPlan, setSelectPlan] = useState<string>("");
+
+  const [revealName, setRevealName] = useState<string>("Untitled Key");
+  const [revealPlan, setRevealPlan] = useState<string>("free");
+
   useEffect(() => {
     const kid = localStorage.getItem("selectedKid") || "";
     setSelectedKid(kid);
   }, []);
 
   function looksLikeGuardKey(token: string) {
-    return token.startsWith("guard_") && token.length >= 20;
+    const t = token.trim();
+    return t.startsWith("guard_") && t.length >= 20;
+  }
+
+  function clearSelection(reason?: string) {
+    localStorage.removeItem("apiKey");
+    localStorage.removeItem("selectedKid");
+    localStorage.removeItem("selectedKeyName");
+    localStorage.removeItem("selectedKeyMasked");
+    localStorage.removeItem("selectedKeyPlan");
+    setSelectedKid("");
+
+    if (reason) toast(reason, { duration: 2500 });
   }
 
   function saveSelection() {
@@ -73,24 +98,29 @@ export default function Page() {
       return;
     }
 
-    if (!looksLikeGuardKey(selectToken)) {
+    if (!looksLikeGuardKey(selectToken.trim())) {
       setError("Please paste a valid Guard API key token (starts with guard_)");
       return;
     }
 
-    localStorage.setItem("apiKey", selectToken.trim());
+    const token = selectToken.trim();
+
+    localStorage.setItem("apiKey", token);
     localStorage.setItem("selectedKid", selectKid);
+
+    // Required for the Dashboard UI
+    localStorage.setItem("selectedKeyName", selectName || "Untitled Key");
+    localStorage.setItem("selectedKeyMasked", selectMasked || "");
+    localStorage.setItem("selectedKeyPlan", selectPlan || "free");
+
+    // optional: if you can access plan here, store it too
+    // localStorage.setItem("selectedKeyPlan", selectPlan);
 
     setSelectedKid(selectKid);
     setSelectOpen(false);
 
     toast.success("Key selected for dashboard/logs", { duration: 2000 });
   }
-
-  const selectedKey = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("apiKey") || "";
-  }, []);
 
   async function refresh() {
     setLoading(true);
@@ -134,21 +164,29 @@ export default function Page() {
       setRevealKid(data.kid);
       setRevealOpen(true);
 
+      setRevealName(nameInput.trim() || "Untitled Key");
+      setRevealPlan("free"); // new keys default to free in backend
+
       setIsModalOpen(false);
+      setLastCreatedName(nameInput.trim() || "Untitled Key");
       setNameInput("");
+
       await refresh();
     } catch (e: any) {
       setError(e?.message || "Failed to create key");
     }
   }
 
-  async function rotate(kid: string, currentName: string) {
+  async function rotate(kid: string, currentName: string, currentPlan: string) {
     setError("");
     try {
       const res = await fetch(`/api/keys/${encodeURIComponent(kid)}/rotate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: currentName || "" }),
+        body: JSON.stringify({
+          name: currentName || "",
+          plan: currentPlan || "free",
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to rotate key");
@@ -157,13 +195,16 @@ export default function Page() {
       setRevealKid(data.kid);
       setRevealOpen(true);
 
+      setRevealName(currentName || "Untitled Key");
+      setRevealPlan(currentPlan || "free");
+
       await refresh();
     } catch (e: any) {
       setError(e?.message || "Failed to rotate key");
     }
   }
 
-  async function disable(kid: string) {
+  async function disable(kid: string, isSelected: boolean) {
     setError("");
     try {
       const res = await fetch(`/api/keys/${encodeURIComponent(kid)}/disable`, {
@@ -171,6 +212,13 @@ export default function Page() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to revoke key");
+
+      if (isSelected) {
+        clearSelection("Selected key was disabled — selection cleared");
+      } else {
+        toast.success("Key disabled", { duration: 2000 });
+      }
+
       await refresh();
     } catch (e: any) {
       setError(e?.message || "Failed to revoke key");
@@ -209,11 +257,20 @@ export default function Page() {
   }
 
   function useKey(key: string) {
-    localStorage.setItem("apiKey", key);
+    const token = key.trim();
+    localStorage.setItem("apiKey", token);
+
     if (revealKid) {
       localStorage.setItem("selectedKid", revealKid);
       setSelectedKid(revealKid);
     }
+
+    // Store details for dashboard display
+    // When creating a key, nameInput is what the user typed
+    localStorage.setItem("selectedKeyName", revealName || "Untitled Key");
+    localStorage.setItem("selectedKeyMasked", maskToken(token));
+    localStorage.setItem("selectedKeyPlan", revealPlan || "free");
+
     window.location.href = "/app/dashboard";
   }
 
@@ -234,7 +291,9 @@ export default function Page() {
           Create New Key
         </button>
       </div>
+
       {error && <div className="text-sm text-red-400">{error}</div>}
+
       <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-950/50 text-gray-400">
@@ -262,110 +321,106 @@ export default function Page() {
                 </td>
               </tr>
             ) : (
-              keys.map((k) => (
-                <tr
-                  key={k.kid ?? k.apiKeyMasked}
-                  className="hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-6 py-4 text-white font-medium">
-                    {k.name || "Untitled Key"}
-                  </td>
+              keys.map((k) => {
+                const isSelected = Boolean(
+                  selectedKid && k.kid && selectedKid === k.kid,
+                );
+                return (
+                  <tr
+                    key={k.kid ?? k.apiKeyMasked}
+                    className="hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-white font-medium">
+                      {k.name || "Untitled Key"}
+                    </td>
 
-                  <td className="px-6 py-4 font-mono text-gray-400">
-                    {k.apiKeyMasked}
-                    {/* {selectedKey && selectedKey.startsWith(k.apiKeyPrefix) ? (
-                      <span className="ml-2 text-xs text-emerald-400">
-                        (selected)
-                      </span>
-                    ) : null} */}
-                    {selectedKid && k.kid && selectedKid === k.kid ? (
-                      <span className="ml-2 text-xs text-emerald-400">
-                        (selected)
-                      </span>
-                    ) : null}
-                  </td>
+                    <td className="px-6 py-4 font-mono text-gray-400">
+                      {k.apiKeyMasked}
+                      {isSelected ? (
+                        <span className="ml-2 text-xs text-emerald-400">
+                          (selected)
+                        </span>
+                      ) : null}
+                    </td>
 
-                  <td className="px-6 py-4">
-                    {k.enabled ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
-                        Disabled
-                      </span>
-                    )}
-                  </td>
+                    <td className="px-6 py-4">
+                      {k.enabled ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
+                          Disabled
+                        </span>
+                      )}
+                    </td>
 
-                  <td className="px-6 py-4 text-gray-300">
-                    {timeAgo(k.lastSeen)}
-                  </td>
-                  <td className="px-6 py-4 text-gray-300">
-                    {formatDate(k.createdAt)}
-                  </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {timeAgo(k.lastSeen)}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {formatDate(k.createdAt)}
+                    </td>
 
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800 disabled:opacity-40"
-                        title="Select this key for dashboard/logs"
-                        disabled={
-                          !k.enabled ||
-                          !k.kid ||
-                          (selectedKid && k.kid === selectedKid)
-                        }
-                        onClick={() => {
-                          setSelectKid(k.kid!);
-                          setSelectName(k.name || "Untitled Key");
-                          setSelectMasked(k.apiKeyMasked);
-                          setSelectToken("");
-                          setSelectOpen(true);
-                        }}
-                      >
-                        {selectedKid && k.kid === selectedKid
-                          ? "Selected"
-                          : "Select"}
-                      </button>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800 disabled:opacity-40"
+                          title="Select this key for dashboard/logs"
+                          disabled={!k.enabled || !k.kid || isSelected}
+                          onClick={() => {
+                            setSelectKid(k.kid!);
+                            setSelectName(k.name || "Untitled Key");
+                            setSelectMasked(k.apiKeyMasked);
+                            setSelectPlan(k.plan || "free"); // ✅ CHANGE
+                            setSelectToken("");
+                            setSelectOpen(true);
+                          }}
+                        >
+                          {isSelected ? "Selected" : "Select"}
+                        </button>
 
-                      <button
-                        className="p-1 text-gray-400 hover:text-white transition-colors"
-                        title="Copy masked token"
-                        onClick={() =>
-                          copy(k.apiKeyMasked, k.kid ?? k.apiKeyMasked)
-                        }
-                      >
-                        {copiedKeyId === (k.kid ?? k.apiKeyMasked) ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
+                        <button
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                          title="Copy masked token"
+                          onClick={() =>
+                            copy(k.apiKeyMasked, k.kid ?? k.apiKeyMasked)
+                          }
+                        >
+                          {copiedKeyId === (k.kid ?? k.apiKeyMasked) ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
 
-                      <button
-                        className="p-1 text-gray-400 hover:text-white transition-colors disabled:opacity-40"
-                        title="Rotate Key (reveals new key once)"
-                        disabled={!k.enabled || !k.kid}
-                        onClick={() => k.kid && rotate(k.kid, k.name)}
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </button>
+                        <button
+                          className="p-1 text-gray-400 hover:text-white transition-colors disabled:opacity-40"
+                          title="Rotate Key (reveals new key once)"
+                          disabled={!k.enabled || !k.kid}
+                          onClick={() => k.kid && rotate(k.kid, k.name, k.plan)} // ✅ CHANGE
+                        >
+                          <RotateCw className="h-4 w-4" />
+                        </button>
 
-                      <button
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-40"
-                        title="Revoke (disable) Key"
-                        disabled={!k.enabled || !k.kid}
-                        onClick={() => k.kid && disable(k.kid)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        <button
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-40"
+                          title="Revoke (disable) Key"
+                          disabled={!k.enabled || !k.kid}
+                          onClick={() => k.kid && disable(k.kid, isSelected)} // ✅ CHANGE
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
       {/* Create Key Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -406,6 +461,7 @@ export default function Page() {
           </div>
         </div>
       )}
+
       {/* Reveal Key Modal (shows full key ONCE) */}
       {revealOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -446,13 +502,12 @@ export default function Page() {
               </button>
             </div>
 
-            {/* (debug optional) */}
             <div className="mt-3 text-xs text-gray-500">kid: {revealKid}</div>
           </div>
         </div>
       )}
 
-      {/* // Select Key Modal */}
+      {/* Select Key Modal */}
       {selectOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
@@ -468,6 +523,9 @@ export default function Page() {
               <div className="text-sm text-gray-300">
                 <div className="font-medium text-white">{selectName}</div>
                 <div className="font-mono text-gray-400">{selectMasked}</div>
+                <div className="mt-1 text-xs text-gray-500">
+                  plan: {selectPlan || "free"}
+                </div>
               </div>
 
               <div>
