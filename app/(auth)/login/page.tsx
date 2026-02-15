@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Shield, ArrowRight } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,19 +17,23 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    const res = await signIn("credentials", {
-      email,
-      password,
-      callbackUrl: "/app/dashboard",
-    });
-    setIsLoading(false);
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/app/dashboard",
+      });
 
-    if (!res?.ok) {
-      setError("Invalid email or password");
-      return;
+      if (res?.error) {
+        setError("Invalid email or password");
+        return;
+      }
+
+      router.push(res?.url || "/app/dashboard");
+    } finally {
+      setIsLoading(false);
     }
-
-    window.location.href = "/app/dashboard";
   };
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
