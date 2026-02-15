@@ -104,14 +104,18 @@ export default function KeysPage() {
     }
 
     const token = selectToken.trim();
+    const rowMatch = keys.find((k) => k.kid && k.kid === selectKid);
+    const resolvedName = (selectName || rowMatch?.name || "").trim();
+    const resolvedPlan = selectPlan || rowMatch?.plan || "free";
+    const resolvedMasked = selectMasked || rowMatch?.apiKeyMasked || "";
 
     localStorage.setItem("apiKey", token);
     localStorage.setItem("selectedKid", selectKid);
 
     // Required for the Dashboard UI
-    localStorage.setItem("selectedKeyName", selectName || "Untitled Key");
-    localStorage.setItem("selectedKeyMasked", selectMasked || "");
-    localStorage.setItem("selectedKeyPlan", selectPlan || "free");
+    localStorage.setItem("selectedKeyName", resolvedName || "Untitled Key");
+    localStorage.setItem("selectedKeyMasked", resolvedMasked);
+    localStorage.setItem("selectedKeyPlan", resolvedPlan);
 
     // optional: if you can access plan here, store it too
     // localStorage.setItem("selectedKeyPlan", selectPlan);

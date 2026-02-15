@@ -1,7 +1,12 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
-import { error } from "console";
+
+function baseUrl() {
+  const base = process.env.GUARD_API_URL;
+  if (!base) throw new Error("GUARD_API_URL_MISSING");
+  return base.replace(/\/+$/, "");
+}
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -9,16 +14,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
 
-  const apiKey = new URL(req.url).searchParams.get("apiKey");
-  const limit = new URL(req.url).searchParams.get("limit") || "20";
+  const apiKey = req.headers.get("x-api-key");
+  const limit = new URL(req.url).searchParams.get("limit") || "50";
 
   if (!apiKey) {
     return NextResponse.json({ error: "API_KEY_REQUIRED" }, { status: 400 });
   }
 
-  const base = process.env.GUARD_API_URL;
-
-  if (!base) {
+  if (!baseUrl()) {
     return NextResponse.json(
       { error: "GUARD_API_URL_MISSING" },
       { status: 500 },
@@ -26,7 +29,7 @@ export async function GET(req: Request) {
   }
 
   const upstream = await fetch(
-    `${base.replace(/\/+$/, "")}/logs?limit=${encodeURIComponent(limit)}`,
+    `${baseUrl()}/logs?limit=${encodeURIComponent(limit)}`,
     { headers: { "x-api-key": apiKey } },
   );
 

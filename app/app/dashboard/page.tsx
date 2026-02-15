@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart3,
   ArrowUpRight,
@@ -10,6 +10,15 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 type SelectedKey = {
   apiKey: string;
@@ -37,6 +46,20 @@ type DashboardResponse = {
   }>;
 };
 
+type SeriesPoint = {
+  day: string;
+  allowed: number;
+  blocked: number;
+  total: number;
+};
+
+type KeyRow = {
+  kid: string | null;
+  name?: string | null;
+  apiKeyMasked?: string | null;
+  plan?: string | null;
+};
+
 function timeAgo(ts?: number | null) {
   if (!ts) return "Never";
   const diff = Date.now() - ts;
@@ -51,10 +74,19 @@ function timeAgo(ts?: number | null) {
   return `${d}d ago`;
 }
 
+function formatTime(ts?: number | string) {
+  if (!ts) return "-";
+  const n = typeof ts === "string" ? Number(ts) : ts;
+  if (!Number.isFinite(n)) return String(ts);
+  return new Date(n).toLocaleString();
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [series, setSeries] = useState<SeriesPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingKeyInfo, setRefreshingKeyInfo] = useState(false);
 
   const [selected, setSelected] = useState<SelectedKey | null>(null);
 
@@ -66,6 +98,57 @@ export default function DashboardPage() {
       masked: localStorage.getItem("selectedKeyMasked") || "",
       plan: localStorage.getItem("selectedKeyPlan") || "",
     };
+  }
+
+  async function refreshSelectedFromServer(kid: string) {
+    try {
+      setRefreshingKeyInfo(true);
+      const res = await fetch("/api/keys");
+      if (!res.ok) return;
+      const json = await res.json();
+      const keys = (json?.keys || []) as KeyRow[];
+      const match = keys.find((k) => k.kid && k.kid === kid);
+      if (!match) return;
+
+      const resolvedName = (match.name || "").trim();
+      const resolvedMasked = match.apiKeyMasked || "";
+      const resolvedPlan = match.plan || "";
+
+      if (resolvedName) {
+        localStorage.setItem("selectedKeyName", resolvedName);
+      }
+      if (resolvedMasked) {
+        localStorage.setItem("selectedKeyMasked", resolvedMasked);
+      }
+      if (resolvedPlan) {
+        localStorage.setItem("selectedKeyPlan", resolvedPlan);
+      }
+
+      if (resolvedName || resolvedMasked || resolvedPlan) {
+        setSelected((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: resolvedName || prev.name,
+                masked: resolvedMasked || prev.masked,
+                plan: resolvedPlan || prev.plan,
+              }
+            : prev,
+        );
+      }
+    } catch {
+      // Best-effort refresh; ignore errors.
+    } finally {
+      setRefreshingKeyInfo(false);
+    }
+  }
+
+  async function loadSeries(apiKey: string) {
+    const res = await fetch("/api/dashboard/series?days=7", {
+      headers: { "x-api-key": apiKey },
+    });
+    const json = await res.json();
+    if (res.ok) setSeries(json.series || []);
   }
 
   async function load() {
@@ -96,6 +179,12 @@ export default function DashboardPage() {
       setData(null);
     } finally {
       setLoading(false);
+    }
+
+    await loadSeries(apiKey);
+
+    if (sel.kid && (!sel.name || sel.name === "Untitled Key")) {
+      await refreshSelectedFromServer(sel.kid);
     }
   }
 
@@ -141,6 +230,11 @@ export default function DashboardPage() {
             {!selected?.apiKey ? (
               <span className="ml-2 text-red-400">(not selected)</span>
             ) : null}
+            {refreshingKeyInfo ? (
+              <span className="ml-2 text-xs text-gray-500">
+                Refreshing key info…
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -179,7 +273,6 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-
       {(error || !selected?.apiKey) && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
           {error || "No API key selected. Go to Keys and select a key."}{" "}
@@ -188,7 +281,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
@@ -250,6 +342,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Usage Chart */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Usage (Last 7 days)
+            </h3>
+            <p className="text-sm text-gray-400">Allowed vs Blocked requests</p>
+          </div>
+        </div>
+
+        <div className="mt-4 h-64">
+          {loading ? (
+            <div className="text-gray-400">Loading chart…</div>
+          ) : series.length === 0 ? (
+            <div className="text-gray-400">No usage data yet.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={series}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" tickFormatter={(d) => d.slice(5)} />
+                <YAxis />
+                <Tooltip />
+                <Area type="monotone" dataKey="allowed" stackId="1" />
+                <Area type="monotone" dataKey="blocked" stackId="1" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
       {/* Recent Activity */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
         <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -294,7 +417,7 @@ export default function DashboardPage() {
                     className="hover:bg-gray-800/50 transition-colors"
                   >
                     <td className="px-6 py-4 text-gray-300">
-                      {timeAgo(log.ts)}
+                      {formatTime(log.ts)}
                     </td>
                     <td className="px-6 py-4 text-gray-300 font-mono">
                       {log.method || "-"}
