@@ -61,12 +61,12 @@ export function Navbar() {
           >
             Docs
           </Link>
-          <Link
+          {/* <Link
             href="/status"
             className={`text-sm font-medium transition-colors hover:text-emerald-400 ${isActive("/status") ? "text-emerald-500" : "text-gray-300"}`}
           >
             Status
-          </Link>
+          </Link> */}
         </div>
 
         <div className="hidden md:flex md:items-center md:gap-4 ">
