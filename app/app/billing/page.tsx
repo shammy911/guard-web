@@ -5,17 +5,44 @@ import Link from "next/link";
 import { Check, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 
+type PlanObj = { name: string; rpm: number; monthly: number };
+
 type BillingStatusResponse = {
-  plan: string; // "free" | "pro"
+  // can be "free" | "pro" OR { name, rpm, monthly }
+  plan: string | PlanObj;
+
   billing_status?: string; // "active" | "canceled" | "none" | ...
   limits?: { rpm: number; monthly: number };
-  // optional extras if you return them
+
   currentPeriodEnd?: string | null; // ISO string
 };
 
-function prettyPlanName(plan: string) {
-  const p = (plan || "").toLowerCase();
-  if (p === "pro") return "Pro";
+function planKey(plan: unknown): "free" | "pro" | "unknown" {
+  if (typeof plan === "string") {
+    const p = plan.toLowerCase().trim();
+    if (p === "pro") return "pro";
+    if (p === "free") return "free";
+    return "unknown";
+  }
+  if (plan && typeof plan === "object" && "name" in plan) {
+    const p = String((plan as any).name)
+      .toLowerCase()
+      .trim();
+    if (p === "pro") return "pro";
+    if (p === "free") return "free";
+    return "unknown";
+  }
+  return "unknown";
+}
+
+function prettyPlanName(plan: unknown) {
+  const k = planKey(plan);
+  if (k === "pro") return "Pro";
+  if (k === "free") return "Free";
+  // fallback
+  if (typeof plan === "string") return plan;
+  if (plan && typeof plan === "object" && "name" in plan)
+    return String((plan as any).name);
   return "Free";
 }
 
@@ -27,12 +54,22 @@ function prettyBillingStatus(s?: string) {
   return { label: "Not Subscribed", tone: "gray" as const };
 }
 
+// ✅ CHANGE: Normalize limits from either plan object OR limits field
+function extractLimits(data: BillingStatusResponse | null) {
+  const p =
+    data?.plan && typeof data.plan === "object" ? (data.plan as PlanObj) : null;
+
+  const rpm = p?.rpm ?? data?.limits?.rpm ?? null;
+  const monthly = p?.monthly ?? data?.limits?.monthly ?? null;
+
+  return { rpm, monthly };
+}
+
 export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<BillingStatusResponse | null>(null);
   const [error, setError] = useState<string>("");
 
-  // Selected key token is used by your API routes (they usually forward x-api-key)
   const selectedApiKey = useMemo(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("apiKey") || "";
@@ -53,7 +90,15 @@ export default function BillingPage() {
       const res = await fetch("/api/billing/status", {
         headers: { "x-api-key": selectedApiKey },
       });
-      const json = await res.json();
+
+      const text = await res.text(); // ✅ CHANGE: safer than res.json() on HTML errors
+      let json: any = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        json = { error: "Invalid JSON from /api/billing/status", raw: text };
+      }
+
       if (!res.ok)
         throw new Error(json?.error || "Failed to load billing status");
       setData(json);
@@ -83,7 +128,9 @@ export default function BillingPage() {
         },
         body: JSON.stringify({}),
       });
-      const json = await res.json();
+
+      const text = await res.text(); // ✅ CHANGE
+      const json = text ? JSON.parse(text) : {};
       if (!res.ok) throw new Error(json?.error || "Checkout failed");
 
       toast.success("Redirecting…", { id: t });
@@ -106,7 +153,9 @@ export default function BillingPage() {
         },
         body: JSON.stringify({}),
       });
-      const json = await res.json();
+
+      const text = await res.text(); // ✅ CHANGE
+      const json = text ? JSON.parse(text) : {};
       if (!res.ok) throw new Error(json?.error || "Portal failed");
 
       toast.success("Redirecting…", { id: t });
@@ -116,15 +165,15 @@ export default function BillingPage() {
     }
   }
 
-  const planName = prettyPlanName(data?.plan || "free");
+  const planName = prettyPlanName(data?.plan);
+  const { rpm, monthly } = extractLimits(data);
+
   const { label: statusLabel, tone } = prettyBillingStatus(
     data?.billing_status,
   );
 
-  const rpm = data?.limits?.rpm ?? null;
-  const monthly = data?.limits?.monthly ?? null;
-
-  const isPro = (data?.plan || "").toLowerCase() === "pro";
+  // ✅ CHANGE: Safe pro detection
+  const isPro = planKey(data?.plan) === "pro";
 
   return (
     <div className="space-y-8">
@@ -160,7 +209,9 @@ export default function BillingPage() {
                   {loading
                     ? "Loading…"
                     : data?.currentPeriodEnd
-                      ? `Renews until ${new Date(data.currentPeriodEnd).toLocaleDateString()}`
+                      ? `Renews until ${new Date(
+                          data.currentPeriodEnd,
+                        ).toLocaleDateString()}`
                       : isPro
                         ? "Subscription active"
                         : "No active subscription"}
@@ -192,7 +243,6 @@ export default function BillingPage() {
                       : "—"}
                 </p>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 mt-2">
-                  {/* this is a visual-only bar; true usage % can be added later */}
                   <div
                     className="bg-emerald-500 h-1.5 rounded-full"
                     style={{ width: "20%" }}
@@ -216,7 +266,6 @@ export default function BillingPage() {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              {/* If Pro: manage in portal. If Free: upgrade */}
               {isPro ? (
                 <>
                   <button
@@ -252,7 +301,6 @@ export default function BillingPage() {
             </div>
           </div>
 
-          {/* Payment History: not supported in Guard API v1 unless you store invoices yourself */}
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
             <h3 className="text-lg font-medium text-white">Payment History</h3>
             <p className="text-sm text-gray-400 mt-2">
@@ -270,7 +318,7 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* Features Card (plan-aware) */}
+        {/* Features Card */}
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-fit">
           <h3 className="text-lg font-semibold text-white mb-4">
             Plan Features
@@ -280,13 +328,15 @@ export default function BillingPage() {
             <li className="flex items-start gap-3 text-sm text-gray-300">
               <Check className="h-5 w-5 text-emerald-500 shrink-0" />
               <span>
-                {isPro ? "300 RPM rate limiting" : "30 RPM rate limiting"}
+                {rpm !== null ? `${rpm} RPM rate limiting` : "Rate limiting"}
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-gray-300">
               <Check className="h-5 w-5 text-emerald-500 shrink-0" />
               <span>
-                {isPro ? "300,000 requests/month" : "10,000 requests/month"}
+                {monthly !== null
+                  ? `${monthly.toLocaleString()} requests/month`
+                  : "Monthly quota"}
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-gray-300">
