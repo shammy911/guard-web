@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 
 export default function PricingPage() {
+  // Keep these in sync with Guard API PLANS
+  const FREE = { rpm: 30, monthly: 10_000, price: 0 };
+  const PRO = { rpm: 300, monthly: 300_000, price: 5 };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <main className="py-24">
@@ -21,7 +25,9 @@ export default function PricingPage() {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-white mb-2">Free</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">$0</span>
+                  <span className="text-4xl font-bold text-white">
+                    ${FREE.price}
+                  </span>
                   <span className="text-gray-500">/month</span>
                 </div>
                 <p className="mt-4 text-gray-400 text-sm">
@@ -32,11 +38,11 @@ export default function PricingPage() {
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
-                  30 requests/minute
+                  {FREE.rpm} requests/minute
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
-                  10,000 requests/month
+                  {FREE.monthly.toLocaleString()} requests/month
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
@@ -65,26 +71,28 @@ export default function PricingPage() {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-white mb-2">Pro</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">$5</span>
+                  <span className="text-4xl font-bold text-white">
+                    ${PRO.price}
+                  </span>
                   <span className="text-gray-500">/month</span>
                 </div>
                 <p className="mt-4 text-gray-400 text-sm">
-                  For growing startups and production apps.
+                  For production apps and teams.
                 </p>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
-                  300 requests/minute
+                  {PRO.rpm} requests/minute
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
-                  300,000 requests/month
+                  {PRO.monthly.toLocaleString()} requests/month
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
-                  Full Logs & Analytics (30d retention)
+                  Full Logs (30d retention)
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-300">
                   <Check className="h-5 w-5 text-emerald-500" />
@@ -96,51 +104,27 @@ export default function PricingPage() {
                 </li>
               </ul>
 
+              {/* Primary CTA for new users */}
               <Link
                 href="/register?plan=pro"
                 className="block w-full rounded-lg bg-emerald-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
               >
-                Start Pro
+                Get Pro
+              </Link>
+
+              {/* Secondary CTA for existing users */}
+              <Link
+                href="/app/billing"
+                className="mt-3 block w-full rounded-lg border border-gray-700 bg-transparent px-6 py-3 text-center text-sm font-semibold text-gray-300 hover:bg-gray-800 transition-all"
+              >
+                Already have an account? Upgrade in dashboard
               </Link>
             </div>
           </div>
 
-          {/* FAQ */}
-          <div className="mt-24 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-white mb-8 text-center">
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  What happens if I exceed my limit?
-                </h3>
-                <p className="text-gray-400">
-                  On the Free plan, requests will be denied with a 429 status.
-                  On Pro, we'll email you before hard-capping, and you can
-                  enable overage billing if needed.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  Can I use Guard with any backend?
-                </h3>
-                <p className="text-gray-400">
-                  Yes! Guard is a REST API that works with any language or
-                  framework. We have SDKs for Node.js, Python, and Go, but you
-                  can use simple HTTP calls too.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  Is there a latency impact?
-                </h3>
-                <p className="text-gray-400">
-                  Guard is distributed globally on the edge. Average latency is
-                  under 30ms for most regions.
-                </p>
-              </div>
-            </div>
+          <div className="mt-10 text-center text-sm text-gray-500">
+            Billing is handled via Lemon Squeezy. Upgrade is applied to your
+            selected API key.
           </div>
         </div>
       </main>

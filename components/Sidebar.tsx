@@ -33,11 +33,11 @@ export function Sidebar() {
       path: "/app/logs",
       icon: FileText,
     },
-    // {
-    //   name: "Billing",
-    //   path: "/app/billing",
-    //   icon: CreditCard,
-    // },
+    {
+      name: "Billing",
+      path: "/app/billing",
+      icon: CreditCard,
+    },
     // {
     //   name: "Settings",
     //   path: "/app/settings",
