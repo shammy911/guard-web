@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
+import { masterKeyHeader } from "@/lib/guardProxy";
 
 function baseUrl() {
   const base = process.env.GUARD_API_URL;
@@ -17,6 +18,9 @@ export async function GET() {
   try {
     const res = await fetch(
       `${baseUrl()}/keys?userId=${encodeURIComponent(session.user.id)}`,
+      {
+        headers: { "x-guard-key": masterKeyHeader() },
+      },
     );
     const text = await res.text();
 
@@ -45,6 +49,7 @@ export async function POST(req: Request) {
     const res = await fetch(`${baseUrl()}/keys`, {
       method: "POST",
       headers: {
+        "x-guard-key": masterKeyHeader(),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ userId: session.user.id, name }),

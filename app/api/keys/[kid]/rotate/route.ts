@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
+import { masterKeyHeader } from "@/lib/guardProxy";
 
 export async function POST(
   req: Request,
@@ -26,7 +27,10 @@ export async function POST(
     `${base}/keys/${encodeURIComponent(params.kid)}/rotate`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "x-guard-key": masterKeyHeader(),
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ userId: session.user.id, name }),
     },
   );

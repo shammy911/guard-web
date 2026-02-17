@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
+import { masterKeyHeader } from "@/lib/guardProxy";
 
 function baseUrl() {
   const base = process.env.GUARD_API_URL;
@@ -30,7 +31,12 @@ export async function GET(req: Request) {
 
   const upstream = await fetch(
     `${baseUrl()}/logs?limit=${encodeURIComponent(limit)}`,
-    { headers: { "x-api-key": apiKey } },
+    {
+      headers: {
+        "x-guard-key": masterKeyHeader(),
+        "x-api-key": apiKey,
+      },
+    },
   );
 
   const text = await upstream.text();

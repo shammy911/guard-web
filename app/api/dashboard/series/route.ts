@@ -1,3 +1,4 @@
+import { masterKeyHeader } from "@/lib/guardProxy";
 import { NextResponse } from "next/server";
 
 function baseUrl() {
@@ -16,7 +17,11 @@ export async function GET(req: Request) {
   const days = url.searchParams.get("days") || "7";
 
   const res = await fetch(`${baseUrl()}/dashboard/series?days=${days}`, {
-    headers: { "x-api-key": apiKey },
+    headers: {
+      "x-guard-key": masterKeyHeader(),
+      "x-api-key": apiKey,
+    },
+    cache: "no-store",
   });
 
   const text = await res.text();

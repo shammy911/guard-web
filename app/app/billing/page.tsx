@@ -134,7 +134,7 @@ export default function BillingPage() {
       if (!res.ok) throw new Error(json?.error || "Checkout failed");
 
       toast.success("Redirecting…", { id: t });
-      window.location.href = json.url;
+      window.open(json.url, "_blank", "noopener,noreferrer");
     } catch (e: any) {
       toast.error(e?.message || "Checkout failed", { id: t });
     }
@@ -159,7 +159,7 @@ export default function BillingPage() {
       if (!res.ok) throw new Error(json?.error || "Portal failed");
 
       toast.success("Redirecting…", { id: t });
-      window.location.href = json.url;
+      window.open(json.url, "_blank", "noopener,noreferrer");
     } catch (e: any) {
       toast.error(e?.message || "Portal failed", { id: t });
     }

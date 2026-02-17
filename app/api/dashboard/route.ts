@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
+import { masterKeyHeader } from "@/lib/guardProxy";
 
 function baseUrl() {
   const base = process.env.GUARD_API_URL;
@@ -20,7 +21,11 @@ export async function GET(req: Request) {
   }
 
   const res = await fetch(`${baseUrl()}/dashboard`, {
-    headers: { "x-api-key": apiKey },
+    headers: {
+      "x-guard-key": masterKeyHeader(),
+      "x-api-key": apiKey,
+    },
+    cache: "no-store",
   });
 
   const text = await res.text();
