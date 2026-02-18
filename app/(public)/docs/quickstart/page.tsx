@@ -23,17 +23,28 @@ export default function QuickstartPage() {
           </h3>
           <p className="text-gray-400 mt-1">
             In the Guard dashboard, go to <b>Keys</b> → <b>Create New Key</b>.
-            Copy the full token (you’ll only see it once).
+            Copy the full token (you'll only see it once).
           </p>
           <div
             className="rounded-xl border border-gray-800 bg-gray-950 p-4 mt-3 
           "
           >
             <p className="text-sm text-gray-400">
-              Keep this key <b>server-side</b>. Don’t expose it in client-side
+              Keep this key <b>server-side</b>. Don't expose it in client-side
               code.
             </p>
           </div>
+        </div>
+
+        {/* NEW: Guard URL Section */}
+        <div className="border-l-2 border-emerald-500 pl-4">
+          <h3 className="text-lg font-semibold text-white mb-3">
+            Guard API Base URL
+          </h3>
+          <p className="text-gray-400 mb-3">
+            This is the URL your SDK will communicate with:
+          </p>
+          <CodeBlock code={process.env.GUARD_API_URL || ""} />
         </div>
 
         <div className="border-l-2 border-emerald-500 pl-4">
