@@ -20,13 +20,12 @@ export default function ExamplesPage() {
           </p>
           <CodeBlock
             code={`import express from "express";
-import { GuardClient } from "@guard/sdk";
+import { GuardClient } from "@shammy911/guard-sdk";
 
 const app = express();
 
 const guard = new GuardClient({
   baseUrl: process.env.GUARD_BASE_URL!,
-  masterKey: process.env.GUARD_MASTER_KEY!,
   apiKey: process.env.GUARD_API_KEY!,
 });
 
@@ -45,11 +44,10 @@ app.listen(3000);`}
             Next.js: protect a route handler
           </h3>
           <CodeBlock
-            code={`import { GuardClient } from "@guard/sdk";
+            code={`import { GuardClient } from "@shammy911/guard-sdk";
 
 const guard = new GuardClient({
   baseUrl: process.env.GUARD_BASE_URL!,
-  masterKey: process.env.GUARD_MASTER_KEY!,
   apiKey: process.env.GUARD_API_KEY!,
   failClosed: true,
 });
@@ -71,10 +69,10 @@ export async function POST() {
           </p>
           <CodeBlock
             code={`// fail-closed (recommended)
-new GuardClient({ baseUrl, masterKey, apiKey, failClosed: true });
+new GuardClient({ baseUrl: process.env.GUARD_BASE_URL!, apiKey: process.env.GUARD_API_KEY!, failClosed: true });
 
 // fail-open (availability-first)
-new GuardClient({ baseUrl, masterKey, apiKey, failClosed: false });`}
+new GuardClient({ baseUrl: process.env.GUARD_BASE_URL!, apiKey: process.env.GUARD_API_KEY!, failClosed: false });`}
           />
         </section>
       </div>

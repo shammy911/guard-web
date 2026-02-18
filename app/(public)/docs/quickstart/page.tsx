@@ -1,4 +1,5 @@
 import CodeBlock from "@/components/docs/CodeBlock";
+import { Lightbulb } from "lucide-react";
 
 export default function QuickstartPage() {
   return (
@@ -6,89 +7,109 @@ export default function QuickstartPage() {
       <div>
         <h1 className="text-3xl font-bold text-white mb-4">Quickstart Guide</h1>
         <p className="text-gray-400 text-lg">
-          Protect sensitive endpoints with Guard in minutes.
+          Add Guard to your app in minutes. You’ll create an API key, install
+          the SDK, and protect routes using{" "}
+          <span className="font-mono font-bold text-gray-100 text-xl">
+            /check
+          </span>
+          .
         </p>
-      </div>
-
-      {/* Important note */}
-      <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-        <b>Server-only:</b> The SDK requires <code>x-guard-key</code>{" "}
-        (MASTER_KEY). Never expose it in the browser.
       </div>
 
       <div className="space-y-6">
         <div className="border-l-2 border-emerald-500 pl-4">
-          <h3 className="text-lg font-semibold text-white">1. Get your keys</h3>
+          <h3 className="text-lg font-semibold text-white">
+            1. Create an API key
+          </h3>
           <p className="text-gray-400 mt-1">
-            Create an API key in your dashboard. You’ll also need a{" "}
-            <b>MASTER_KEY</b> for Guard auth.
+            In the Guard dashboard, go to <b>Keys</b> → <b>Create New Key</b>.
+            Copy the full token (you’ll only see it once).
           </p>
+          <div
+            className="rounded-xl border border-gray-800 bg-gray-950 p-4 mt-3 
+          "
+          >
+            <p className="text-sm text-gray-400">
+              Keep this key <b>server-side</b>. Don’t expose it in client-side
+              code.
+            </p>
+          </div>
         </div>
 
         <div className="border-l-2 border-emerald-500 pl-4">
-          <h3 className="text-lg font-semibold text-white">2. Install SDK</h3>
-          <p className="text-gray-400 mt-1 mb-3">
-            Not published yet — use local workspace / file install for now.
-          </p>
-          <CodeBlock
-            code={`# examples (pick one)
-pnpm add @guard/sdk
-# or
-npm i ../guard-sdk`}
-          />
-        </div>
-
-        <div className="border-l-2 border-emerald-500 pl-4">
-          <h3 className="text-lg font-semibold text-white">3. Configure env</h3>
-          <p className="text-gray-400 mt-1 mb-3">
-            Keep secrets on the server only.
-          </p>
-          <CodeBlock
-            code={`GUARD_BASE_URL=https://guard-api-production-490e.up.railway.app
-GUARD_MASTER_KEY=guard_master_prod_key
-GUARD_API_KEY=guard_********************************`}
-          />
+          <h3 className="text-lg font-semibold text-white mb-3">
+            2. Install the SDK
+          </h3>
+          <CodeBlock code={`npm i @shammy911/guard-sdk`} />
         </div>
 
         <div className="border-l-2 border-emerald-500 pl-4">
           <h3 className="text-lg font-semibold text-white">
-            4. Protect a route
+            3. Use it in your backend
           </h3>
           <p className="text-gray-400 mt-1 mb-3">
-            Call Guard before your business logic.
+            The SDK calls your hosted Guard API. Since{" "}
+            <span className="font-mono">/check</span> is public now, you only
+            send
+            <span className="font-mono"> x-api-key</span>.
           </p>
           <CodeBlock
-            code={`import { GuardClient } from "@guard/sdk";
+            code={`import { GuardClient } from "@shammy911/guard-sdk";
 
 const guard = new GuardClient({
-  baseUrl: process.env.GUARD_BASE_URL!,
-  masterKey: process.env.GUARD_MASTER_KEY!,
-  apiKey: process.env.GUARD_API_KEY!,
+  baseUrl: process.env.GUARD_URL!,     // e.g. https://guard-api....up.railway.app
+  apiKey: process.env.GUARD_API_KEY!,  // your Guard key (store server-side)
   timeoutMs: 800,
-  failClosed: true,
+  failClosed: true, // recommended for security endpoints
 });
 
-export async function POST() {
-  const decision = await guard.check("/api/login", "POST");
-
+export async function protectRequest(route: string, method?: string) {
+  const decision = await guard.check(route, method);
   if (!decision.allowed) {
-    return new Response("Too Many Requests", { status: 429 });
+    // block request
+    return { ok: false, reason: decision.reason };
   }
-
-  return new Response("ok");
+  return { ok: true };
 }`}
           />
         </div>
 
         <div className="border-l-2 border-emerald-500 pl-4">
-          <h3 className="text-lg font-semibold text-white">5. No SDK (curl)</h3>
+          <h3 className="text-lg font-semibold text-white mb-3">
+            4. Example: Next.js API route
+          </h3>
           <CodeBlock
-            code={`curl -X POST "$GUARD_BASE_URL/check" \\
-  -H "Content-Type: application/json" \\
-  -H "x-guard-key: $GUARD_MASTER_KEY" \\
-  -H "x-api-key: $GUARD_API_KEY" \\
-  -d '{"route":"/api/login","method":"POST"}'`}
+            code={`import { NextResponse } from "next/server";
+import { GuardClient } from "@shammy911/guard-sdk";
+
+const guard = new GuardClient({
+  baseUrl: process.env.GUARD_URL!,
+  apiKey: process.env.GUARD_API_KEY!,
+  failClosed: true,
+});
+
+export async function POST(req: Request) {
+  const decision = await guard.check("/api/login", "POST");
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Blocked", reason: decision.reason },
+      { status: 429 }
+    );
+  }
+
+  // continue login...
+  return NextResponse.json({ ok: true });
+}`}
           />
+        </div>
+
+        <div className="border-l-2 border-emerald-500 pl-4">
+          <p className="text-md text-gray-400">
+            <Lightbulb className="inline mr-2 text-amber-400" />
+            <span className="font-semibold text-green-400">Tip:</span> Call
+            Guard on security-sensitive endpoints first: login, signup, password
+            reset, OTP verify, payment endpoints, etc.
+          </p>
         </div>
       </div>
     </div>
