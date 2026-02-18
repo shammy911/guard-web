@@ -17,7 +17,7 @@ export default function ApiPage() {
 
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-4 font-mono text-sm text-gray-200 whitespace-pre-wrap">
           {`x-api-key: guard_***************
-GUARD_URL=https://guard-api-production-490e.up.railway.app  # Our Guard API website URL`}
+GUARD_URL=https://guard-api-********************.app  # Guard API URL`}
         </div>
 
         <p className="text-sm text-gray-400">
