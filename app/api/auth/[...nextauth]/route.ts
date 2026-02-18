@@ -13,6 +13,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log("Credentials received:", credentials);
         if (!credentials?.email || !credentials.password) {
           return null;
         }
@@ -22,7 +23,13 @@ export const authOptions: NextAuthOptions = {
         ]);
 
         const user = res.rows[0];
-        if (!user) return null;
+
+        if (!user) {
+          console.log(
+            "Authentication failed: User not found or password incorrect",
+          );
+          return null;
+        }
 
         const valid = await bcrypt.compare(
           credentials.password,
