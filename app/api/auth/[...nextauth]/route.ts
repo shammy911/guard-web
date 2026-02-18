@@ -17,31 +17,35 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) {
           return null;
         }
+        try {
+          const res = await pool.query("SELECT * FROM users WHERE email = $1", [
+            credentials.email,
+          ]);
 
-        const res = await pool.query("SELECT * FROM users WHERE email = $1", [
-          credentials.email,
-        ]);
+          const user = res.rows[0];
 
-        const user = res.rows[0];
+          if (!user) {
+            console.log(
+              "Authentication failed: User not found or password incorrect",
+            );
+            return null;
+          }
 
-        if (!user) {
-          console.log(
-            "Authentication failed: User not found or password incorrect",
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.password_hash,
           );
+          if (!valid) return null;
+
+          return {
+            id: String(user.id),
+            email: user.email,
+            name: user.name,
+          };
+        } catch (dbError) {
+          console.error("Database Connection Error:", dbError);
           return null;
         }
-
-        const valid = await bcrypt.compare(
-          credentials.password,
-          user.password_hash,
-        );
-        if (!valid) return null;
-
-        return {
-          id: String(user.id),
-          email: user.email,
-          name: user.name,
-        };
       },
     }),
   ],
