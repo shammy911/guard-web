@@ -47,8 +47,12 @@ export default function KeysPage() {
   const [error, setError] = useState("");
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const [revealCopied, setRevealCopied] = useState(false);
+  const [copiedUrlId, setCopiedUrlId] = useState<string | null>(null);
   const copiedKeyTimer = useRef<number | null>(null);
   const revealCopyTimer = useRef<number | null>(null);
+  const copiedUrlTimer = useRef<number | null>(null);
+
+  const guardUrl = process.env.NEXT_PUBLIC_GUARD_API_URL || "";
 
   // reveal modal
   const [revealKey, setRevealKey] = useState<string>("");
@@ -149,6 +153,7 @@ export default function KeysPage() {
     return () => {
       if (copiedKeyTimer.current) window.clearTimeout(copiedKeyTimer.current);
       if (revealCopyTimer.current) window.clearTimeout(revealCopyTimer.current);
+      if (copiedUrlTimer.current) window.clearTimeout(copiedUrlTimer.current);
     };
   }, []);
 
@@ -229,12 +234,21 @@ export default function KeysPage() {
     }
   }
 
-  async function copy(text: string, keyId?: string) {
+  async function copy(text: string, keyId?: string, isUrl?: boolean) {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Copied to clipboard", { duration: 2000 });
 
-      if (keyId) {
+      if (isUrl) {
+        setCopiedUrlId(keyId || "guard-url");
+        if (copiedUrlTimer.current) {
+          window.clearTimeout(copiedUrlTimer.current);
+        }
+        copiedUrlTimer.current = window.setTimeout(() => {
+          setCopiedUrlId(null);
+          copiedUrlTimer.current = null;
+        }, 1500);
+      } else if (keyId) {
         setCopiedKeyId(keyId);
         if (copiedKeyTimer.current) {
           window.clearTimeout(copiedKeyTimer.current);
@@ -243,9 +257,7 @@ export default function KeysPage() {
           setCopiedKeyId(null);
           copiedKeyTimer.current = null;
         }, 1500);
-      }
-
-      if (!keyId) {
+      } else {
         setRevealCopied(true);
         if (revealCopyTimer.current) {
           window.clearTimeout(revealCopyTimer.current);
@@ -297,6 +309,29 @@ export default function KeysPage() {
       </div>
 
       {error && <div className="text-sm text-red-400">{error}</div>}
+
+      {/* Guard URL Section */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+        <h3 className="text-sm font-medium text-gray-300 mb-2">
+          Guard API URL
+        </h3>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm font-mono text-gray-200 break-all">
+            {guardUrl}
+          </code>
+          <button
+            onClick={() => copy(guardUrl, "guard-url", true)}
+            className="p-2 text-gray-400 hover:text-white transition-colors"
+            title="Copy Guard URL"
+          >
+            {copiedUrlId === "guard-url" ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
 
       <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
         <table className="w-full text-left text-sm">
