@@ -34,13 +34,9 @@ export default function QuickstartPage() {
               code.
             </p>
           </div>
-        </div>
-
-        {/* NEW: Guard URL Section */}
-        <div className="border-l-2 border-emerald-500 pl-4">
-          <h3 className="text-lg font-semibold text-white mb-3">
+          <h4 className="text-lg font-semibold text-white mb-2 mt-3">
             Guard API Base URL
-          </h3>
+          </h4>
           <p className="text-gray-400 mb-3">
             This is the URL your SDK will communicate with:
           </p>
