@@ -26,7 +26,11 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        if (res.error === "EMAIL_NOT_VERIFIED") {
+          setError("Please verify your email before signing in.");
+        } else {
+          setError("Invalid email or password");
+        }
         return;
       }
 

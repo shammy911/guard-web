@@ -18,8 +18,9 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         try {
+          const normalizedEmail = credentials.email.toLowerCase().trim();
           const res = await pool.query("SELECT * FROM users WHERE email = $1", [
-            credentials.email,
+            normalizedEmail,
           ]);
 
           const user = res.rows[0];
@@ -37,12 +38,23 @@ export const authOptions: NextAuthOptions = {
           );
           if (!valid) return null;
 
+          if (!user.is_verified) {
+            throw new Error("EMAIL_NOT_VERIFIED");
+          }
+
           return {
             id: String(user.id),
             email: user.email,
             name: user.name,
+            isVerified: Boolean(user.is_verified),
           };
         } catch (dbError) {
+          if (
+            dbError instanceof Error &&
+            dbError.message === "EMAIL_NOT_VERIFIED"
+          ) {
+            throw dbError;
+          }
           console.error("Database Connection Error:", dbError);
           return null;
         }
@@ -60,6 +72,7 @@ export const authOptions: NextAuthOptions = {
         token.id = String(user.id);
         token.email = user.email;
         token.name = user.name;
+        token.isVerified = user.isVerified;
       }
       return token;
     },
@@ -68,6 +81,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
+        session.user.isVerified = Boolean(token.isVerified);
       }
       return session;
     },

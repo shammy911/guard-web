@@ -7,6 +7,7 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      isVerified?: boolean;
     };
   }
 
@@ -14,6 +15,7 @@ declare module "next-auth" {
     id: string;
     name?: string | null;
     email?: string | null;
+    isVerified?: boolean;
   }
 }
 
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     id?: string;
     email?: string | null;
     name?: string | null;
+    isVerified?: boolean;
   }
 }
