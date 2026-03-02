@@ -1,9 +1,6 @@
 import { pool } from "@/lib/db";
 import bcrypt from "bcrypt";
-import sgMail from "@sendgrid/mail";
 import crypto from "crypto";
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
 
 export async function POST(req: Request) {
   const { name, email, password } = await req.json();
@@ -77,24 +74,40 @@ export async function POST(req: Request) {
       [userId, verificationToken, sanitizedEmail, expiresAt],
     );
 
-    // Send verification email
+    // Send verification email via Brevo
     const verificationLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
 
-    await sgMail.send({
-      from: process.env.SENDGRID_FROM_EMAIL || "noreply@yourdomain.com",
-      to: sanitizedEmail,
-      subject: "Verify your email address",
-      html: `
-        <h2>Welcome to Guard!</h2>
-        <p>Thank you for signing up, ${sanitizedName}.</p>
-        <p>Please verify your email address by clicking the link below:</p>
-        <a href="${verificationLink}" style="display:inline-block; padding:10px 20px; background-color:#10b981; color:white; text-decoration:none; border-radius:5px;">
-          Verify Email
-        </a>
-        <p>This link expires in 24 hours.</p>
-        <p>If you didn't sign up, you can ignore this email.</p>
-      `,
+    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": process.env.BREVO_API_KEY || "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "Guard",
+          email: process.env.BREVO_FROM_EMAIL || "noreply@guard.com",
+        },
+        to: [{ email: sanitizedEmail, name: sanitizedName }],
+        subject: "Verify your email address",
+        htmlContent: `
+          <h2>Welcome to Guard!</h2>
+          <p>Thank you for signing up, ${sanitizedName}.</p>
+          <p>Please verify your email address by clicking the link below:</p>
+          <a href="${verificationLink}" style="display:inline-block; padding:10px 20px; background-color:#10b981; color:white; text-decoration:none; border-radius:5px;">
+            Verify Email
+          </a>
+          <p>This link expires in 24 hours.</p>
+          <p>If you didn't sign up, you can ignore this email.</p>
+        `,
+      }),
     });
+
+    if (!brevoResponse.ok) {
+      const brevoError = await brevoResponse.json();
+      console.error("Brevo email error:", brevoError);
+      throw new Error("Failed to send verification email");
+    }
 
     return new Response(
       JSON.stringify({
