@@ -64,7 +64,7 @@ export default function QuickstartPage() {
             code={`import { GuardClient } from "@shammy911/guard-sdk";
 
 const guard = new GuardClient({
-  baseUrl: process.env.GUARD_URL!,     // e.g. https://guard-api....up.railway.app
+  baseUrl: process.env.GUARD_URL!,     // e.g. https://guard-api-****.onrender.com
   apiKey: process.env.GUARD_API_KEY!,  // your Guard key (store server-side)
   timeoutMs: 800,
   failClosed: true, // recommended for security endpoints

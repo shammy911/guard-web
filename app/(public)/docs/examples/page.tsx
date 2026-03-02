@@ -25,7 +25,7 @@ import { GuardClient } from "@shammy911/guard-sdk";
 const app = express();
 
 const guard = new GuardClient({
-  baseUrl: process.env.GUARD_BASE_URL!,   // https://guard-api-********************.app
+  baseUrl: process.env.GUARD_BASE_URL!,   // https://guard-api-****.onrender.com
   apiKey: process.env.GUARD_API_KEY!,
 });
 
@@ -47,7 +47,7 @@ app.listen(3000);`}
             code={`import { GuardClient } from "@shammy911/guard-sdk";
 
 const guard = new GuardClient({
-  baseUrl: process.env.GUARD_BASE_URL!,   // https://guard-api-********************.app
+  baseUrl: process.env.GUARD_BASE_URL!,   // https://guard-api-****.onrender.com
   apiKey: process.env.GUARD_API_KEY!,
   failClosed: true,
 });
